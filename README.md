@@ -1,6 +1,6 @@
 # LFD — LLMs for Dummies
 
-**Made by Pakun**
+**Made by Pakun & iinze0**
 
 Kali terminal tool. Same idea as hydra: install once, then `sudo lfd`.
 

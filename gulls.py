@@ -268,7 +268,7 @@ def run(stdscr, title, hint, items):
             last = now
         stdscr.erase()
         try:
-            stdscr.addstr(0, 0, " LFD · pakun   github.com/brazyqueso", curses.color_pair(1) | curses.A_BOLD)
+            stdscr.addstr(0, 0, " LFD · pakun & iinze0   github.com/brazyqueso", curses.color_pair(1) | curses.A_BOLD)
         except curses.error:
             pass
         for cld in clouds:

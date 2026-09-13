@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LFD — LLMs for Dummies. Made by Pakun.
+# LFD — LLMs for Dummies. Made by Pakun & iinze0.
 #   curl -fsSL https://raw.githubusercontent.com/brazyqueso/lfd/main/install.sh | sudo bash
 #   sudo lfd
 set -euo pipefail
@@ -67,7 +67,7 @@ cat >/usr/share/applications/lfd.desktop <<'EOF'
 [Desktop Entry]
 Name=LFD
 GenericName=LLMs for Dummies
-Comment=Local LLMs on Kali. Made by Pakun.
+Comment=Local LLMs on Kali. Made by Pakun & iinze0.
 Exec=x-terminal-emulator -e sudo lfd
 Icon=lfd
 Terminal=false

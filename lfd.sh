@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# LFD(1) — LLMs for Dummies. Made by Pakun.
+# LFD(1) — LLMs for Dummies. Made by Pakun & iinze0.
 # Usage (after install):  sudo lfd
-# Version: 0.9.3
+# Version: 0.9.4
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,12 +15,12 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.9.3"
+AICC_VER="0.9.4"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
-LFD_AUTHOR="Pakun"
+LFD_AUTHOR="Pakun & iinze0"
 LFD_GH="https://github.com/brazyqueso"
 LFD_REPO="https://github.com/brazyqueso/lfd"
-LFD_BACKTITLE="LFD · pakun   github.com/brazyqueso"
+LFD_BACKTITLE="LFD · pakun & iinze0   github.com/brazyqueso"
 LFD_VER_URL="https://raw.githubusercontent.com/brazyqueso/lfd/main/VERSION"
 LFD_SRC_URL="https://raw.githubusercontent.com/brazyqueso/lfd/main/lfd.sh"
 
@@ -99,7 +99,7 @@ lfd_banner() {
 | |   | |_  | | | |
 | |___|  _| | |_| |
 |_____|_|   |____/
-  LLMs for Dummies     by Pakun
+  LLMs for Dummies     by Pakun & iinze0
 EOF
   printf '\033[0m'
   printf '  %s\n  %s\n\n' "$LFD_GH" "$LFD_REPO"
@@ -121,7 +121,7 @@ SVG
 [Desktop Entry]
 Name=LFD
 GenericName=LLMs for Dummies
-Comment=Local LLMs on Kali. Made by Pakun.
+Comment=Local LLMs on Kali. Made by Pakun & iinze0.
 Exec=x-terminal-emulator -e sudo lfd
 Icon=lfd
 Terminal=false
@@ -976,7 +976,7 @@ ensure_gulls() {
 gull_main_menu() {
   ensure_gulls || return 1
   python3 "$LFD_HOME/gulls.py" <<EOF
-[ LFD $AICC_VER | Pakun ]
+[ LFD $AICC_VER | Pakun & iinze0 ]
 LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH
 1|GET ME AN LLM
 2|status / hardware
@@ -1004,7 +1004,7 @@ main_menu() {
     if [[ $st -eq 2 ]]; then
       exit 0
     elif [[ $st -ne 0 || -z $c ]]; then
-    c=$(d --stdout --title "[ LFD $AICC_VER | Pakun ]" --menu \
+    c=$(d --stdout --title "[ LFD $AICC_VER | Pakun & iinze0 ]" --menu \
       "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH" 22 76 14 \
       1 "GET ME AN LLM" \
       2 "status / hardware" \
@@ -1043,7 +1043,7 @@ main_menu() {
 
 usage() {
   cat <<EOF
-LFD — LLMs for Dummies. Made by Pakun.
+LFD — LLMs for Dummies. Made by Pakun & iinze0.
 
   chmod +x lfd.sh
   ./lfd.sh
@@ -1060,15 +1060,4 @@ main() {
   load_conf
   case "${1:-}" in
     -h|--help) usage; exit 0 ;;
-    install) install_path_alias; exit 0 ;;
-    update|--update) need_dialog; self_update; exit 0 ;;
-    wizard) need_dialog; wizard_get_llm; exit 0 ;;
-    status) status_text; exit 0 ;;
-    chat) need_dialog; run_ollama_chat; exit 0 ;;
-    pull) need_dialog; pull_model "${2:-}"; exit 0 ;;
-    web) need_dialog; launch_lfd_web; exit 0 ;;
-    *) need_dialog; lfd_banner; maybe_offer_update; main_menu ;;
-  esac
-}
-
-main "$@"
+  
