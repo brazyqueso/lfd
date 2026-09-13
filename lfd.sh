@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LFD(1) — LLMs for Dummies. Made by Pakun.
 # Usage (after install):  sudo lfd
-# Version: 0.8.0
+# Version: 0.8.1
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,13 +15,14 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.8.0"
+AICC_VER="0.8.1"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
 LFD_AUTHOR="Pakun"
 LFD_GH="https://github.com/brazyqueso"
-LFD_SITE="https://shantaj.com"
 LFD_REPO="https://github.com/brazyqueso/lfd"
-LFD_BACKTITLE="LFD · pakun   github.com/brazyqueso   shantaj.com"
+LFD_BACKTITLE="LFD · pakun   github.com/brazyqueso"
+LFD_VER_URL="https://raw.githubusercontent.com/brazyqueso/lfd/main/VERSION"
+LFD_SRC_URL="https://raw.githubusercontent.com/brazyqueso/lfd/main/lfd.sh"
 
 mkdir -p "$LFD_HOME" "$AICC_MODELS_DIR" "$AICC_BIN"
 
@@ -101,7 +102,7 @@ lfd_banner() {
   LLMs for Dummies     by Pakun
 EOF
   printf '\033[0m'
-  printf '  %s\n  %s\n  %s\n\n' "$LFD_GH" "$LFD_SITE" "$LFD_REPO"
+  printf '  %s\n  %s\n\n' "$LFD_GH" "$LFD_REPO"
 }
 
 write_kali_icon() {
@@ -712,6 +713,81 @@ self_path() {
   readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0"
 }
 
+remote_version() {
+  local v=""
+  v="$(curl -fsSL --max-time 8 "${LFD_VER_URL}?t=$(date +%s)" 2>/dev/null || true)"
+  v="$(printf '%s' "$v" | tr -d '[:space:]')"
+  printf '%s' "$v"
+}
+
+ver_gt() {
+  # true if $1 > $2
+  [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" == "$1" && "$1" != "$2" ]]
+}
+
+self_update() {
+  local quiet="${1:-}"
+  if [[ ${EUID} -ne 0 ]]; then
+    if [[ -n $quiet ]]; then
+      return 0
+    fi
+    die_dialog "Update needs root.\n\n  sudo lfd update"
+    return 1
+  fi
+  local remote
+  remote="$(remote_version)"
+  if [[ -z $remote ]]; then
+    [[ -n $quiet ]] && return 0
+    die_dialog "Could not reach GitHub for VERSION."
+    return 1
+  fi
+  if ! ver_gt "$remote" "$AICC_VER"; then
+    if [[ -z $quiet ]]; then
+      info_dialog "Already current.\nThis box: $AICC_VER\nGitHub:  $remote"
+    fi
+    return 0
+  fi
+  if [[ -z $quiet ]]; then
+    yesno "Update LFD $AICC_VER → $remote now?" || return 0
+  fi
+  local tmp dest
+  tmp="$(mktemp)"
+  dest="/usr/bin/lfd"
+  if ! curl -fsSL --max-time 60 "${LFD_SRC_URL}?t=$(date +%s)" -o "$tmp"; then
+    rm -f "$tmp"
+    die_dialog "Download of lfd.sh failed."
+    return 1
+  fi
+  head -1 "$tmp" | grep -q '^#!' || { rm -f "$tmp"; die_dialog "Bad download."; return 1; }
+  grep -q 'LLMs for Dummies' "$tmp" || { rm -f "$tmp"; die_dialog "Bad download."; return 1; }
+  install -m 0755 "$tmp" "$dest"
+  rm -f "$tmp"
+  write_kali_icon || true
+  if [[ -n ${SUDO_USER:-} ]]; then
+    local user_home
+    user_home="$(getent passwd "$SUDO_USER" | cut -d: -f6 || true)"
+    if [[ -n ${user_home:-} && -d $user_home/.local/bin ]]; then
+      install -m 0755 "$dest" "$user_home/.local/bin/lfd" || true
+    fi
+  fi
+  if [[ -z $quiet ]]; then
+    info_dialog "Updated to $remote.\nRestarting..."
+  fi
+  exec "$dest"
+}
+
+maybe_offer_update() {
+  [[ ${LFD_NO_UPDATE:-0} == 1 ]] && return 0
+  [[ ${EUID} -eq 0 ]] || return 0
+  need_cmd curl || return 0
+  local remote
+  remote="$(remote_version)"
+  [[ -n $remote ]] || return 0
+  ver_gt "$remote" "$AICC_VER" || return 0
+  yesno "LFD $remote is out (you have $AICC_VER).\nUpdate now?" || return 0
+  self_update
+}
+
 install_path_alias() {
   local dest
   if [[ ${EUID} -eq 0 ]]; then
@@ -775,7 +851,6 @@ LFD $AICC_VER — LLMs for Dummies
 Made by $LFD_AUTHOR
 
 $LFD_GH
-$LFD_SITE
 $LFD_REPO
 
 Local models. No API key.
@@ -850,7 +925,7 @@ main_menu() {
   while true; do
     local c
     c=$(d --stdout --title "[ LFD $AICC_VER | Pakun ]" --menu \
-      "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH   $LFD_SITE" 22 76 14 \
+      "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH" 22 76 14 \
       1 "GET ME AN LLM" \
       2 "status / hardware" \
       3 "ollama" \
@@ -860,6 +935,7 @@ main_menu() {
       6 "kali packages" \
       7 "gpu notes" \
       8 "install lfd on PATH" \
+      U "update LFD" \
       9 "log" \
       A "about" \
       0 "quit") || exit 0
@@ -873,6 +949,7 @@ main_menu() {
       6) install_kali_deps ;;
       7) install_nvidia_hint ;;
       8) install_path_alias ;;
+      U) self_update ;;
       9) view_log ;;
       A) about ;;
       0) clear; exit 0 ;;
@@ -891,6 +968,7 @@ LFD — LLMs for Dummies. Made by Pakun.
   ./lfd.sh chat
   ./lfd.sh pull [tag]
   ./lfd.sh install
+  sudo lfd update
 EOF
 }
 
@@ -899,11 +977,12 @@ main() {
   case "${1:-}" in
     -h|--help) usage; exit 0 ;;
     install) install_path_alias; exit 0 ;;
+    update|--update) need_dialog; self_update; exit 0 ;;
     wizard) need_dialog; wizard_get_llm; exit 0 ;;
     status) status_text; exit 0 ;;
     chat) need_dialog; run_ollama_chat; exit 0 ;;
     pull) need_dialog; pull_model "${2:-}"; exit 0 ;;
-    *) need_dialog; lfd_banner; main_menu ;;
+    *) need_dialog; lfd_banner; maybe_offer_update; main_menu ;;
   esac
 }
 
