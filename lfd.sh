@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LFD(1) — LLMs for Dummies. Made by Pakun.
 # Usage (after install):  sudo lfd
-# Version: 0.9.0
+# Version: 0.9.1
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,7 +15,7 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.9.0"
+AICC_VER="0.9.1"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
 LFD_AUTHOR="Pakun"
 LFD_GH="https://github.com/brazyqueso"
@@ -957,9 +957,53 @@ menu_apps() {
   done
 }
 
+ensure_gulls() {
+  [[ ${LFD_NO_GULLS:-0} == 1 ]] && return 1
+  have_python || return 1
+  mkdir -p "$LFD_HOME"
+  local t
+  t="$(date +%s)"
+  if curl -fsSL --max-time 8 "https://raw.githubusercontent.com/brazyqueso/lfd/main/gulls.py?t=${t}" -o "$LFD_HOME/gulls.py"; then
+    return 0
+  fi
+  if [[ -n ${BASH_SOURCE[0]:-} && -f "$(dirname "${BASH_SOURCE[0]}")/gulls.py" ]]; then
+    cp "$(dirname "${BASH_SOURCE[0]}")/gulls.py" "$LFD_HOME/gulls.py"
+    return 0
+  fi
+  [[ -f $LFD_HOME/gulls.py ]]
+}
+
+gull_main_menu() {
+  ensure_gulls || return 1
+  python3 "$LFD_HOME/gulls.py" <<EOF
+[ LFD $AICC_VER | Pakun ]
+LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH
+1|GET ME AN LLM
+2|status / hardware
+3|ollama
+4|apps
+5|launch chat only
+W|web chat (browser)
+B|launch OS agent
+6|kali packages
+7|gpu notes
+8|install lfd on PATH
+U|update LFD
+9|log
+A|about
+0|quit
+EOF
+}
+
 main_menu() {
   while true; do
-    local c
+    local c st
+    c=""
+    st=0
+    c=$(gull_main_menu) || st=$?
+    if [[ $st -eq 2 ]]; then
+      exit 0
+    elif [[ $st -ne 0 || -z $c ]]; then
     c=$(d --stdout --title "[ LFD $AICC_VER | Pakun ]" --menu \
       "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH" 22 76 14 \
       1 "GET ME AN LLM" \
@@ -976,6 +1020,8 @@ main_menu() {
       9 "log" \
       A "about" \
       0 "quit") || exit 0
+    fi
+    [[ -n $c ]] || exit 0
     case "$c" in
       1) wizard_get_llm ;;
       2) d --title "Status" --msgbox "$(status_text)" 24 78 ;;
