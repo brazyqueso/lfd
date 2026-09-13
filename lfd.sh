@@ -670,7 +670,7 @@ self_path() {
 install_path_alias() {
   local dest
   if [[ ${EUID} -eq 0 ]]; then
-    dest="/usr/local/bin/lfd"
+    dest="/usr/bin/lfd"
   else
     dest="$AICC_BIN/lfd"
     mkdir -p "$AICC_BIN"

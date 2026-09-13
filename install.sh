@@ -8,7 +8,7 @@ REPO_USER="${LFD_GITHUB_USER:-brazyqueso}"
 REPO_NAME="${LFD_GITHUB_REPO:-lfd}"
 BRANCH="${LFD_GITHUB_BRANCH:-main}"
 RAW="https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${BRANCH}/lfd.sh"
-BIN="/usr/local/bin/lfd"
+BIN="/usr/bin/lfd"
 
 if [[ ${EUID} -ne 0 ]]; then
   echo "LFD needs root to land in ${BIN}."
