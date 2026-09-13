@@ -54,6 +54,28 @@ if [[ -n ${SUDO_USER:-} ]]; then
 fi
 
 command -v lfd >/dev/null || true
+
+mkdir -p /usr/share/pixmaps /usr/share/applications
+cat >/usr/share/pixmaps/lfd.svg <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#c41e3a" stroke-width="3"/>
+  <path fill="#c41e3a" d="M10 14h8v36H10zm0 28h18v8H10zM30 14h8v36h-8zm0 0h16v8H30zm0 14h12v8H30zM50 14h8v36h-8zm-2 0h16v8H48zm-2 28h16v8H46z"/>
+</svg>
+SVG
+cat >/usr/share/applications/lfd.desktop <<'EOF'
+[Desktop Entry]
+Name=LFD
+GenericName=LLMs for Dummies
+Comment=Local LLMs on Kali. Made by Pakun.
+Exec=x-terminal-emulator -e sudo lfd
+Icon=lfd
+Terminal=false
+Type=Application
+Categories=System;Utility;Security;
+Keywords=llm;ollama;kali;pakun;
+EOF
+
 echo
 echo "LFD installed at $BIN"
 echo "Launch:"

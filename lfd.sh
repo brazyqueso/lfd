@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LFD(1) — LLMs for Dummies. Made by Pakun.
 # Usage (after install):  sudo lfd
-# Version: 0.7.0
+# Version: 0.8.0
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,9 +15,13 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.7.0"
+AICC_VER="0.8.0"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
 LFD_AUTHOR="Pakun"
+LFD_GH="https://github.com/brazyqueso"
+LFD_SITE="https://shantaj.com"
+LFD_REPO="https://github.com/brazyqueso/lfd"
+LFD_BACKTITLE="LFD · pakun   github.com/brazyqueso   shantaj.com"
 
 mkdir -p "$LFD_HOME" "$AICC_MODELS_DIR" "$AICC_BIN"
 
@@ -83,7 +87,48 @@ need_dialog() {
   export NEWT_COLORS='root=red,black;border=red,black;window=red,black;title=white,black;checkbox=red,black;actcheckbox=black,red;listbox=red,black;actlistbox=black,red;button=black,red;actbutton=black,red'
 }
 
-d() { command dialog --no-shadow --colors "$@"; }
+d() { command dialog --no-shadow --colors --backtitle "$LFD_BACKTITLE" "$@"; }
+
+lfd_banner() {
+  [[ -t 1 ]] || return 0
+  printf '\033[31m'
+  cat <<'EOF'
+ _     _____ ____
+| |   |  ___|  _ \
+| |   | |_  | | | |
+| |___|  _| | |_| |
+|_____|_|   |____/
+  LLMs for Dummies     by Pakun
+EOF
+  printf '\033[0m'
+  printf '  %s\n  %s\n  %s\n\n' "$LFD_GH" "$LFD_SITE" "$LFD_REPO"
+}
+
+write_kali_icon() {
+  local icon="${1:-/usr/share/pixmaps/lfd.svg}"
+  local desk="${2:-/usr/share/applications/lfd.desktop}"
+  [[ ${EUID} -eq 0 ]] || return 0
+  mkdir -p /usr/share/pixmaps /usr/share/applications
+  cat >"$icon" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#c41e3a" stroke-width="3"/>
+  <path fill="#c41e3a" d="M10 14h8v36H10zm0 28h18v8H10zM30 14h8v36h-8zm0 0h16v8H30zm0 14h12v8H30zM50 14h8v36h-8zm-2 0h16v8H48zm-2 28h16v8H46z"/>
+</svg>
+SVG
+  cat >"$desk" <<EOF
+[Desktop Entry]
+Name=LFD
+GenericName=LLMs for Dummies
+Comment=Local LLMs on Kali. Made by Pakun.
+Exec=x-terminal-emulator -e sudo lfd
+Icon=lfd
+Terminal=false
+Type=Application
+Categories=System;Utility;Security;
+Keywords=llm;ollama;kali;pakun;
+EOF
+}
 
 die_dialog() { d --title "[ error ]" --msgbox "${1:-unknown error}" 14 72 || true; }
 info_dialog() { d --title "[ ok ]" --msgbox "$1" 14 72 || true; }
@@ -678,6 +723,7 @@ install_path_alias() {
   local src
   src="$(self_path)"
   install -m 0755 "$src" "$dest"
+  write_kali_icon || true
   if [[ ${EUID} -ne 0 && -f $HOME/.bashrc ]] && ! grep -q '\.local/bin' "$HOME/.bashrc"; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$HOME/.bashrc"
   fi
@@ -719,19 +765,26 @@ view_log() {
 }
 
 about() {
-  d --msgbox "LFD $AICC_VER
-LLMs for Dummies
+  d --msgbox " _     _____ ____
+| |   |  ___|  _ \\
+| |   | |_  | | | |
+| |___|  _| | |_| |
+|_____|_|   |____/
+
+LFD $AICC_VER — LLMs for Dummies
 Made by $LFD_AUTHOR
 
-Local models. No API key required.
+$LFD_GH
+$LFD_SITE
+$LFD_REPO
 
-[OS controlled] = uncensored agent models
-[Chat only]     = normal chat models
+Local models. No API key.
+[OS controlled] = uncensored agent
+[Chat only]     = normal chat
 
 First run: GET ME AN LLM
-
 Data: $AICC_HOME
-" 20 72
+" 22 70
 }
 
 # ---------- menus ----------
@@ -797,7 +850,7 @@ main_menu() {
   while true; do
     local c
     c=$(d --stdout --title "[ LFD $AICC_VER | Pakun ]" --menu \
-      "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot" 22 76 14 \
+      "LLMs for Dummies   RAM $(ram_gb)G   $(recommend_model)\n[OS controlled]=uncensored agent   [Chat only]=chatbot\n$LFD_GH   $LFD_SITE" 22 76 14 \
       1 "GET ME AN LLM" \
       2 "status / hardware" \
       3 "ollama" \
@@ -850,7 +903,7 @@ main() {
     status) status_text; exit 0 ;;
     chat) need_dialog; run_ollama_chat; exit 0 ;;
     pull) need_dialog; pull_model "${2:-}"; exit 0 ;;
-    *) need_dialog; main_menu ;;
+    *) need_dialog; lfd_banner; main_menu ;;
   esac
 }
 
