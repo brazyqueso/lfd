@@ -33,6 +33,7 @@ else
   rm -f "$tmp"
 fi
 
+# also stash a user copy so non-root PATH works
 if [[ -n ${SUDO_USER:-} ]]; then
   user_home="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
   mkdir -p "$user_home/.local/bin"
