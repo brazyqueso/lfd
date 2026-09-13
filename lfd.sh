@@ -1060,4 +1060,15 @@ main() {
   load_conf
   case "${1:-}" in
     -h|--help) usage; exit 0 ;;
-  
+    install) install_path_alias; exit 0 ;;
+    update|--update) need_dialog; self_update; exit 0 ;;
+    wizard) need_dialog; wizard_get_llm; exit 0 ;;
+    status) status_text; exit 0 ;;
+    chat) need_dialog; run_ollama_chat; exit 0 ;;
+    pull) need_dialog; pull_model "${2:-}"; exit 0 ;;
+    web) need_dialog; launch_lfd_web; exit 0 ;;
+    *) need_dialog; lfd_banner; maybe_offer_update; main_menu ;;
+  esac
+}
+
+main "$@"
