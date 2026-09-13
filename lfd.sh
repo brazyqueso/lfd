@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LFD(1) — LLMs for Dummies. Made by Pakun.
 # Usage (after install):  sudo lfd
-# Version: 0.8.1
+# Version: 0.9.0
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,7 +15,7 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.8.1"
+AICC_VER="0.9.0"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
 LFD_AUTHOR="Pakun"
 LFD_GH="https://github.com/brazyqueso"
@@ -639,6 +639,38 @@ launch_oterm() {
   read -r -p "Enter to return..."
 }
 
+ensure_web_ui() {
+  mkdir -p "$LFD_HOME/web"
+  local base="https://raw.githubusercontent.com/brazyqueso/lfd/main/web"
+  local t
+  t="$(date +%s)"
+  curl -fsSL "${base}/index.html?t=${t}" -o "$LFD_HOME/web/index.html" || return 1
+  curl -fsSL "${base}/server.py?t=${t}" -o "$LFD_HOME/web/server.py" || return 1
+  chmod +x "$LFD_HOME/web/server.py"
+}
+
+launch_lfd_web() {
+  have_python || { die_dialog "python3 missing — install kali packages first."; return; }
+  start_ollama_daemon || true
+  ensure_web_ui || { die_dialog "Could not download LFD web UI from GitHub."; return; }
+  local port="${LFD_WEB_PORT:-7681}"
+  export LFD_WEB_PORT="$port"
+  export OLLAMA_HOST="${OLLAMA_HOST:-http://127.0.0.1:11434}"
+  if ! curl -fsS "http://127.0.0.1:${port}/" >/dev/null 2>&1; then
+    nohup python3 "$LFD_HOME/web/server.py" >>"$LFD_HOME/web.log" 2>&1 &
+    echo $! >"$LFD_HOME/web.pid"
+    sleep 0.5
+  fi
+  local url="http://127.0.0.1:${port}/"
+  if curl -fsS "$url" >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 || true
+    firefox "$url" >/dev/null 2>&1 || true
+    info_dialog "Web chat is up:\n\n$url\n\nSame local Ollama as the terminal — easier to read.\nLeave it running. Pick this menu again to reopen."
+  else
+    die_dialog "Web server failed.\n$(tail -20 "$LFD_HOME/web.log" 2>/dev/null || true)"
+  fi
+}
+
 launch_webui_docker() {
   if ! have_docker; then
     die_dialog "Docker is not installed.
@@ -700,10 +732,12 @@ No API key. Cancel anytime." 16 70 || return
     os "[OS controlled] agent that runs commands" \
     chat "[Chat only] ollama run" \
     oterm "oterm (still chat only)" \
+    web "LFD web chat (browser, readable)" \
     webui "Open WebUI (still chat only)") || return
   case "$how" in
     os) launch_os_agent "${DEFAULT_OLLAMA_MODEL:-}" ;;
     chat) run_ollama_chat ;;
+    web) launch_lfd_web ;;
     oterm) pip_tool oterm; launch_oterm ;;
     webui) pip_tool open-webui; launch_open_webui ;;
   esac
@@ -904,6 +938,7 @@ menu_apps() {
       4 "Launch Open WebUI :8080" \
       5 "Open WebUI via Docker :3000" \
       6 "Install + launch oterm" \
+      w "LFD web chat (local browser)" \
       7 "Save OpenRouter API key" \
       8 "Save Hugging Face token" \
       0 "Back") || return
@@ -914,6 +949,7 @@ menu_apps() {
       4) launch_open_webui ;;
       5) launch_webui_docker ;;
       6) pip_tool oterm; launch_oterm ;;
+      w) launch_lfd_web ;;
       7) save_key OPENROUTER_KEY "OpenRouter API key" ;;
       8) save_key HF_TOKEN "Hugging Face token" ;;
       0) return ;;
@@ -931,6 +967,7 @@ main_menu() {
       3 "ollama" \
       4 "apps" \
       5 "launch chat only" \
+      W "web chat (browser)" \
       B "launch OS agent" \
       6 "kali packages" \
       7 "gpu notes" \
@@ -945,6 +982,7 @@ main_menu() {
       3) menu_ollama ;;
       4) menu_apps ;;
       5) run_ollama_chat ;;
+      W) launch_lfd_web ;;
       B) launch_os_agent ;;
       6) install_kali_deps ;;
       7) install_nvidia_hint ;;
@@ -982,6 +1020,7 @@ main() {
     status) status_text; exit 0 ;;
     chat) need_dialog; run_ollama_chat; exit 0 ;;
     pull) need_dialog; pull_model "${2:-}"; exit 0 ;;
+    web) need_dialog; launch_lfd_web; exit 0 ;;
     *) need_dialog; lfd_banner; maybe_offer_update; main_menu ;;
   esac
 }
