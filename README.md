@@ -2,14 +2,16 @@
 
 **Made by Pakun**
 
-Kali terminal tool. Same idea as hydra / bettercap: install once, then one command.
+Kali terminal tool. Same idea as hydra: install once, then `sudo lfd`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brazyqueso/lfd/main/install.sh | sudo bash
+curl -fsSL https://cdn.jsdelivr.net/gh/brazyqueso/lfd@4a7f7f2dedccca64a2d9eb428d5fb7943ffc8c84/install.sh | sudo bash
 sudo lfd
 ```
 
-That is the whole launch. No venv dance, no 15 flags, no API key.
+Puts the binary in `/usr/bin/lfd` (Kali `sudo` ignores `/usr/local/bin`).
+
+No API key.
 
 - `[OS controlled]` = uncensored agent-style models
 - `[Chat only]` = normal chat models
