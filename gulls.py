@@ -19,6 +19,49 @@ LEFT = [
     ("    \\\\   ", "  <'. )__"),
 ]
 FAR = [">v<", "~v~", "^v^", "v.v"]
+CLOUDS = [
+    (
+        "   .--.   ",
+        " .-(  )-. ",
+        "(________)",
+    ),
+    (
+        "    .--.    ",
+        ".-~(    )~-.",
+        "(__________)",
+    ),
+    (
+        "  .---.  ",
+        " (     ) ",
+        "  `---'  ",
+    ),
+]
+
+
+def blit(stdscr, art, gy, gx, cols, rows, box, attr):
+    y1, x1, y2, x2 = box
+    for i, line in enumerate(art):
+        yy = gy + i
+        if yy < 1 or yy >= rows - 1:
+            continue
+        xx = int(gx)
+        frag = line
+        if xx < 0:
+            frag = line[-xx:]
+            xx = 0
+        # skip chars that sit inside the dialog
+        out = []
+        for j, ch in enumerate(frag):
+            cx = xx + j
+            if cx >= cols:
+                break
+            if y1 <= yy <= y2 and x1 <= cx <= x2:
+                continue
+            try:
+                stdscr.addch(yy, cx, ord(ch), attr)
+            except curses.error:
+                pass
+            out.append(ch)
 
 
 def read_menu():
@@ -32,6 +75,38 @@ def read_menu():
         tag, label = line.split("|", 1)
         items.append((tag, label))
     return title, hint, items
+
+
+class Cloud:
+    def __init__(self, cols: int, rows: int, box):
+        self.art = random.choice(CLOUDS)
+        self.dir = random.choice((-1, 1))
+        self.x = float(random.randint(0, max(1, cols - 12)))
+        self.y = self._lane(rows, box)
+        self.speed = random.uniform(0.08, 0.22) * self.dir
+
+    def _lane(self, rows, box):
+        y1, x1, y2, x2 = box
+        # prefer sky (above the box) and a couple low ones
+        high = [y for y in range(1, max(2, y1 - 3))]
+        low = [y for y in range(min(rows - 4, y2 + 2), rows - 3)]
+        lanes = high or low or [1]
+        if low and random.random() < 0.25:
+            lanes = low
+        return random.choice(lanes)
+
+    def step(self, cols, rows, box):
+        self.x += self.speed
+        w = len(self.art[0])
+        if self.x < -w - 2 or self.x > cols + 2:
+            self.dir *= -1
+            self.speed = abs(self.speed) * self.dir
+            self.x = -w if self.dir > 0 else float(cols + 1)
+            self.y = self._lane(rows, box)
+            self.art = random.choice(CLOUDS)
+
+    def draw(self, stdscr, cols, rows, box):
+        blit(stdscr, self.art, int(self.y), int(self.x), cols, rows, box, curses.color_pair(2) | curses.A_DIM)
 
 
 class Gull:
@@ -115,6 +190,7 @@ def run(stdscr, title, hint, items):
     box = (by, bx, by + bh - 1, bx + bw - 1)
     n = max(4, min(10, (rows * cols) // 280))
     gulls = [Gull(cols, rows, box) for _ in range(n)]
+    clouds = [Cloud(cols, rows, box) for _ in range(max(3, min(7, cols // 18)))]
     last = time.time()
 
     while True:
@@ -124,6 +200,8 @@ def run(stdscr, title, hint, items):
         box = (by, bx, by + bh - 1, bx + bw - 1)
         now = time.time()
         if now - last > 0.04:
+            for cld in clouds:
+                cld.step(cols, rows, box)
             for g in gulls:
                 g.step(cols, rows, box)
             last = now
@@ -132,6 +210,8 @@ def run(stdscr, title, hint, items):
             stdscr.addstr(0, 0, " LFD · pakun   github.com/brazyqueso", curses.color_pair(1) | curses.A_BOLD)
         except curses.error:
             pass
+        for cld in clouds:
+            cld.draw(stdscr, cols, rows, box)
         for g in gulls:
             g.draw(stdscr, cols, rows, box)
 
