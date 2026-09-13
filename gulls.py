@@ -36,6 +36,22 @@ CLOUDS = [
         "  `---'  ",
     ),
 ]
+PLANE_R = (
+    r"                      /\      ",
+    r"               ______/  \______",
+    r"    __________/   LFD          \___",
+    r"~~>/  . . . .  [====]            /|",
+    r"   \____________________________/ |",
+    r"          //                \\    ",
+)
+PLANE_L = (
+    r"      /\                      ",
+    r"______/  \______               ",
+    r"___/          LFD \__________    ",
+    r"|\            [====]  . . .  \<~~",
+    r"| \____________________________/   ",
+    r"    //                \\          ",
+)
 
 
 def blit(stdscr, art, gy, gx, cols, rows, box, attr):
@@ -107,6 +123,49 @@ class Cloud:
 
     def draw(self, stdscr, cols, rows, box):
         blit(stdscr, self.art, int(self.y), int(self.x), cols, rows, box, curses.color_pair(2) | curses.A_DIM)
+
+
+class Plane:
+    def __init__(self, cols: int, rows: int, box):
+        self.dir = random.choice((-1, 1))
+        self.art = PLANE_R if self.dir > 0 else PLANE_L
+        self.x = -len(self.art[0]) if self.dir > 0 else float(cols + 2)
+        self.y = self._lane(rows, box)
+        self.speed = random.uniform(0.45, 0.75) * self.dir
+
+    def _lane(self, rows, box):
+        y1, x1, y2, x2 = box
+        h = len(PLANE_R)
+        high = [y for y in range(1, max(2, y1 - h))]
+        low = [y for y in range(min(rows - h - 1, y2 + 1), max(min(rows - h - 1, y2 + 1) + 1, rows - h - 1))]
+        lanes = high or low
+        if not lanes:
+            return 1
+        if high and low and random.random() < 0.3:
+            return random.choice(low)
+        return random.choice(high or lanes)
+
+    def step(self, cols, rows, box):
+        self.x += self.speed
+        w = len(self.art[0])
+        if (self.dir > 0 and self.x > cols + 2) or (self.dir < 0 and self.x < -w - 2):
+            self.dir *= -1
+            self.art = PLANE_R if self.dir > 0 else PLANE_L
+            self.speed = abs(self.speed) * self.dir
+            self.x = -w if self.dir > 0 else float(cols + 2)
+            self.y = self._lane(rows, box)
+
+    def draw(self, stdscr, cols, rows, box):
+        blit(
+            stdscr,
+            self.art,
+            int(self.y),
+            int(self.x),
+            cols,
+            rows,
+            box,
+            curses.color_pair(1) | curses.A_BOLD,
+        )
 
 
 class Gull:
@@ -191,6 +250,7 @@ def run(stdscr, title, hint, items):
     n = max(4, min(10, (rows * cols) // 280))
     gulls = [Gull(cols, rows, box) for _ in range(n)]
     clouds = [Cloud(cols, rows, box) for _ in range(max(3, min(7, cols // 18)))]
+    plane = Plane(cols, rows, box)
     last = time.time()
 
     while True:
@@ -202,6 +262,7 @@ def run(stdscr, title, hint, items):
         if now - last > 0.04:
             for cld in clouds:
                 cld.step(cols, rows, box)
+            plane.step(cols, rows, box)
             for g in gulls:
                 g.step(cols, rows, box)
             last = now
@@ -212,6 +273,7 @@ def run(stdscr, title, hint, items):
             pass
         for cld in clouds:
             cld.draw(stdscr, cols, rows, box)
+        plane.draw(stdscr, cols, rows, box)
         for g in gulls:
             g.draw(stdscr, cols, rows, box)
 

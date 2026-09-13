@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LFD(1) — LLMs for Dummies. Made by Pakun.
 # Usage (after install):  sudo lfd
-# Version: 0.9.2
+# Version: 0.9.3
 set -euo pipefail
 
 LFD_HOME="${LFD_HOME:-$HOME/.lfd}"
@@ -15,7 +15,7 @@ AICC_VENV="$LFD_HOME/venv"
 AICC_MODELS_DIR="$LFD_HOME/modelfiles"
 AICC_BIN="${LFD_BIN:-$HOME/.local/bin}"
 AICC_TITLE="LFD"
-AICC_VER="0.9.2"
+AICC_VER="0.9.3"
 AICC_DIALOGRC="$LFD_HOME/dialogrc"
 LFD_AUTHOR="Pakun"
 LFD_GH="https://github.com/brazyqueso"
